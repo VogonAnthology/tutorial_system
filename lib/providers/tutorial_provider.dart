@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:tutorial_system/tutorial_system.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:async';
 // import '../src/util/constants.dart';
 
 class TutorialState extends Equatable {
@@ -26,10 +27,27 @@ class TutorialState extends Equatable {
 
 enum TutorialStatus { idle, running }
 
-class TutorialNotifier extends StateNotifier<TutorialState> {
-  final TutorialRunner _tutorial;
+class TutorialNotifier extends Notifier<TutorialState> {
+  TutorialNotifier(this._tutorial);
 
-  TutorialNotifier(this._tutorial) : super(const TutorialState.idle());
+  final TutorialRunner _tutorial;
+  final StreamController<TutorialState> _stateController =
+      StreamController<TutorialState>.broadcast();
+
+  @override
+  TutorialState build() {
+    ref.onDispose(() => _stateController.close());
+    return const TutorialState.idle();
+  }
+
+  Stream<TutorialState> get stream => _stateController.stream;
+
+  void _setState(TutorialState newState) {
+    state = newState;
+    if (!_stateController.isClosed) {
+      _stateController.add(newState);
+    }
+  }
 
   void startTutorial() {
     _progressTutorial();
@@ -46,7 +64,7 @@ class TutorialNotifier extends StateNotifier<TutorialState> {
 
     if (lastStep != null) {
       lastStep.execute(this);
-      state = TutorialState.running(lastIndex, lastStep);
+      _setState(TutorialState.running(lastIndex, lastStep));
     }
   }
 
@@ -58,7 +76,7 @@ class TutorialNotifier extends StateNotifier<TutorialState> {
         _tutorial.registerStepForReplay(currentStep);
       }
       replayStep.execute(this);
-      state = TutorialState.running(state._currentTutorialIndex, replayStep);
+      _setState(TutorialState.running(state._currentTutorialIndex, replayStep));
     }
   }
 
@@ -70,7 +88,7 @@ class TutorialNotifier extends StateNotifier<TutorialState> {
 
     if (previousStep != null) {
       previousStep.execute(this);
-      state = TutorialState.running(previousIndex, previousStep);
+      _setState(TutorialState.running(previousIndex, previousStep));
     }
   }
 
@@ -83,16 +101,14 @@ class TutorialNotifier extends StateNotifier<TutorialState> {
     if (nextStep != null) {
       // await Future.delayed(Constants.waitBetweenSteps);
       nextStep.execute(this);
-      state = TutorialState.running(nextIndex, nextStep);
+      _setState(TutorialState.running(nextIndex, nextStep));
     } else {
-      state = const TutorialState.idle();
+      _setState(const TutorialState.idle());
     }
   }
 }
 
-final tutorialProvider = StateNotifierProvider.family<TutorialNotifier,
-    TutorialState, TutorialRunner>(
-  (ref, runner) {
-    return TutorialNotifier(runner);
-  },
+final tutorialProvider =
+    NotifierProvider.family<TutorialNotifier, TutorialState, TutorialRunner>(
+  TutorialNotifier.new,
 );

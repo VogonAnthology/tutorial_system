@@ -18,9 +18,7 @@ class TutorialHandler {
   final TextStyle tutorialTextStyle = const TextStyle(
       fontSize: 16.0, color: Colors.white, fontWeight: FontWeight.bold);
 
-  TutorialHandler(
-      TutorialRunner tutorialRunner, this._tutorialRepository, dynamic ref)
-      : tutorialNotifier = ref.read(tutorialProvider(tutorialRunner).notifier);
+    TutorialHandler(this.tutorialNotifier, this._tutorialRepository);
 
   void startTutorial() {
     tutorialNotifier.stream.listen((event) {

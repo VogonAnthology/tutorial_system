@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/tutorial.dart';
 import '../domain/tutorial_repository.dart';
 import '../model/tutorial_runner.dart';
+import '../providers/tutorial_provider.dart';
 import 'tutorial_handler.dart';
 
 class TutorialStartButton extends ConsumerStatefulWidget {
@@ -32,10 +33,10 @@ class _TutorialStartButtonState extends ConsumerState<TutorialStartButton> {
         ref.read(tutorialRepositoryProvider);
     TutorialRunner tutorialRunner =
         TutorialRunner(widget.tutorial, tutorialRepository);
+    final tutorialNotifier = ref.read(tutorialProvider(tutorialRunner).notifier);
     final tutorialHandler = TutorialHandler(
-      tutorialRunner,
+      tutorialNotifier,
       tutorialRepository,
-      ref,
     );
     tutorialHandler.startTutorial();
   }
